@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "max_depth": 2,
+  "max_new": 3,
+  "branch_prefix": "auto/growth"
+}

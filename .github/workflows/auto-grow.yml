@@ -1,0 +1,46 @@
+name: Auto Growth
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-grow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+      - name: Run growth script
+        id: run_growth
+        run: |
+          python - <<'PY'
+          import json, os
+          cfg = {"enabled": False}
+          if os.path.exists("growth_config.json"):
+              cfg = json.load(open("growth_config.json"))
+          enabled = cfg.get("enabled", False)
+          max_depth = cfg.get("max_depth", 2)
+          max_new = cfg.get("max_new", 3)
+          from growth_engine import GrowthEngine
+          ge = GrowthEngine(max_depth=max_depth, dry_run=not enabled, max_new=max_new)
+          created = ge.grow_from_seed(seed_name="auto_seed", seed_description="automated run", seed_depth=0)
+          print("CREATED:", created)
+          if not enabled:
+              print("Dry-run; no changes will be committed.")
+          PY
+      - name: Create PR if changes
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Auto growth: add skills\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          title: "Auto growth: add skills"
+          body: "Automated growth run"
+          branch: auto/growth-${{ github.run_number }}
+          base: main
